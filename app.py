@@ -17,8 +17,8 @@ RELEASE_TAG = "v1.0"                               # the GitHub Release that hol
 
 ROOT = Path(__file__).parent
 MODEL_DIR = ROOT / "models"
-SAMPLE_DIR = ROOT / "samples"
-RESULT_DIR = ROOT / "results"
+SAMPLE_DIR = ROOT / "samples" if (ROOT / "samples").is_dir() else ROOT
+RESULT_DIR = ROOT / "results" if (ROOT / "results").is_dir() else ROOT
 NAMES = ["trash", "bio", "rov"]
 LABELS = {"trash": "Litter", "bio": "Marine life", "rov": "ROV parts"}
 COLORS = {0: (230, 126, 34), 1: (46, 204, 113), 2: (52, 152, 219)}  # RGB: trash orange, bio green, rov blue
