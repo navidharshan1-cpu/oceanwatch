@@ -1,0 +1,4 @@
+models/*.pt
+models/*.part
+__pycache__/
+.DS_Store
