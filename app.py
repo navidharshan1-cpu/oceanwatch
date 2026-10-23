@@ -46,6 +46,18 @@ def load_models():
     return models
 
 
+def check_models(models):
+    """Each model must have exactly the 3 OceanWatch classes; otherwise the wrong file was uploaded."""
+    problems = []
+    for name, m in models.items():
+        classes = [m.names[i] for i in sorted(m.names)]
+        if classes != NAMES:
+            shown = ", ".join(classes[:6]) + (", ..." if len(classes) > 6 else "")
+            problems.append(f"**{MODEL_FILES[name]}** ({name}) has {len(classes)} classes ({shown}), "
+                            f"not trash / bio / rov.")
+    return problems
+
+
 # ---------------------------------------------------------------- helpers
 def iou(a, b):
     ix = max(0, min(a[2], b[2]) - max(a[0], b[0]))
@@ -181,6 +193,12 @@ with tab_detect:
 
         with st.spinner("Loading the models (first time only, about a minute)..."):
             models = load_models()
+        problems = check_models(models)
+        if problems:
+            st.error("Wrong model file in the GitHub Release:\n\n" + "\n\n".join(f"- {p}" for p in problems) +
+                     "\n\nUpload the 3-class model (from the yolo26l-3cls / rtdetr-l-3cls folder) to Release "
+                     f"{RELEASE_TAG}, then Reboot the app.")
+            st.stop()
         with st.spinner("Detecting..."):
             results = run_models(models, bgr, conf)
 
