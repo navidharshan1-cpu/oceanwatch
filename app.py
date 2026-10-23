@@ -202,10 +202,33 @@ with tab_detect:
         with st.spinner("Detecting..."):
             results = run_models(models, bgr, conf)
 
+        test_res = load_csv("final_test_results.csv", index_col=0)
         cols = st.columns(3 if gt is not None else 2)
         for col, (mname, (preds, _)) in zip(cols, results.items()):
             col.image(draw(rgb, [(c, b) for c, b, _ in preds], [s for *_, s in preds]),
                       caption=f"{mname} prediction", use_container_width=True)
+            with col.container(border=True):
+                # 1. Accuracy on THIS image (only possible when the true labels are known)
+                if gt is not None:
+                    tp, fp, fn = match(preds, gt)
+                    p = tp / (tp + fp) if tp + fp else 0.0
+                    r = tp / (tp + fn) if tp + fn else 0.0
+                    f1 = 2 * p * r / (p + r) if p + r else 0.0
+                    st.markdown(f"**Accuracy on this image** (vs ground truth)  \n"
+                                f"F1 **{f1:.0%}** · Precision {p:.0%} · Recall {r:.0%}  \n"
+                                f"{tp} correct · {fp} false alarms · {fn} missed")
+                else:
+                    st.markdown("**Accuracy on this image:** not measurable (no true labels for this photo)")
+                # 2. Confidence of this model's detections on this image
+                n_trash = sum(c == 0 for c, *_ in preds)
+                avg = f"{np.mean([s for *_, s in preds]):.0%}" if preds else "-"
+                st.markdown(f"**Detections:** {len(preds)} objects ({n_trash} litter) · average confidence {avg}")
+                # 3. The model's measured accuracy on the 1,081 unseen test images
+                if test_res is not None and mname in test_res.columns:
+                    t = test_res[mname].astype(float)
+                    st.markdown(f"**Model accuracy on 1,081 test images**  \n"
+                                f"Litter AP50 **{t['trash AP50']:.1%}** · mAP50 {t['mAP50']:.1%}  \n"
+                                f"Precision {t['precision']:.1%} · Recall {t['recall']:.1%}")
         if gt is not None:
             cols[2].image(draw(rgb, gt), caption="Ground truth (correct answer)", use_container_width=True)
             st.success(f"Test image with known labels ({len(gt)} objects): accuracy for this image is measured below.")
